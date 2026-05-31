@@ -1,0 +1,17 @@
+FROM eclipse-temurin:25-jdk AS build
+
+RUN jlink \
+    --add-modules java.base \
+    --strip-debug \
+    --compress zip-9 \
+    --no-header-files \
+    --no-man-pages \
+    --output /myjre
+
+FROM ubuntu:26.04
+
+ENV JAVA_HOME /user/java/jdk25
+ENV PATH $JAVA_HOME/bin:$PATH
+COPY --from=build /myjre $JAVA_HOME
+
+CMD ["jshell"]
