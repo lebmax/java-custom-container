@@ -3,7 +3,6 @@
 .idea
 .mvn
 .PVS-Studio
-.veai
 build
 target
 out
