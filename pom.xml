@@ -16,7 +16,13 @@
 
   <properties>
     <!-- Generic properties -->
-    <java.version>25</java.version>
+    <java.version>21</java.version>
+
+    <jackson-bom.version>3.1.5</jackson-bom.version>
+    <logback.version>1.5.35</logback.version>
+    <spring-data-bom.version>2025.1.6</spring-data-bom.version>
+    <spring-framework.version>7.0.8</spring-framework.version>
+    <tomcat.version>11.0.22</tomcat.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <!-- Important for reproducible builds. Update using e.g. ./mvnw versions:set -DnewVersion=... -->
@@ -91,7 +97,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.7.11</version>
+      <version>42.7.12</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -117,6 +123,11 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-devtools</artifactId>
       <optional>true</optional>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-liquibase</artifactId>
     </dependency>
 
     <dependency>
@@ -282,10 +293,38 @@
       </plugin>
     </plugins>
   </build>
+
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
       <url>https://www.apache.org/licenses/LICENSE-2.0</url>
     </license>
   </licenses>
+
+  <repositories>
+    <repository>
+      <id>axiom-spring</id>
+      <name>Axiom Spring Repository</name>
+      <url>https://spring-repo.axiomjdk.ru/</url>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>trusted-repo</id>
+      <name>Trusted Repo</name>
+      <url>https://repo.axiomjdk.ru</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>axiom-spring</id>
+      <name>Axiom Spring</name>
+      <url>https://spring-repo.axiomjdk.ru</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
 </project>

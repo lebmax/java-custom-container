@@ -1,38 +1,29 @@
-FROM maven:3.9.16-eclipse-temurin-25-alpine AS build
+FROM maven:3.9.16-eclipse-temurin-25 AS build
 
-RUN mkdir -p /usr/src/project
-COPY . /usr/src/project
-WORKDIR /usr/src/project
-
-RUN mvn package -DskipTests
-
-RUN jdeps --ignore-missing-deps -q  \
-    --recursive  \
-    --multi-release 25  \
-    --print-module-deps  \
-    --class-path 'BOOT-INF/lib/*'  \
-    target/app.jar > deps.info
-
-RUN jlink \
-    --add-modules "$(cat deps.info)",java.desktop,java.compiler,java.logging,java.management,java.naming,jdk.security.jgss,java.instrument,java.sql \
-    --strip-debug \
-    --compress zip-9 \
-    --no-header-files \
-    --no-man-pages \
-    --output /myjre
-
-FROM cr.int.axiomjdk.ru/axiom-linux-25/axiom-linux-base:25-musl
-
-ENV JAVA_HOME /user/java/jdk25
-ENV PATH $JAVA_HOME/bin:$PATH
-
-COPY --from=build /myjre $JAVA_HOME
-
-RUN mkdir /app
-
-COPY --from=build /usr/src/project/target/app.jar /app/
 WORKDIR /app
 
-EXPOSE 8080
+# Copy Maven files
+COPY pom.xml .
+
+# Download dependencies
+RUN mvn dependency:go-offline -B
+
+# Copy source code
+COPY src src
+
+# Build the application
+RUN mvn package -DskipTests
+
+FROM cr.yandex/crpgua9ba7h8red2hulb/25-trusted-axiom-runtime-container-pro:jre-25-glibc
+
+WORKDIR /app
+
+ENV LANG=ru_RU.UTF-8
+ENV LC_ALL=ru_RU.UTF-8
+
+# Copy the built JAR from the build stage
+COPY --from=build /app/target/*.jar app.jar
+
+USER 65534:65534
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

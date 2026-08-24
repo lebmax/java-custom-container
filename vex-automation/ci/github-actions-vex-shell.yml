@@ -1,0 +1,46 @@
+name: vex-shell
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 4 * * 1"
+
+jobs:
+  vex:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Generate CycloneDX SBOM
+        shell: bash
+        run: |
+          ./mvnw -B -DskipTests org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom \
+            -DoutputFormat=json \
+            -DoutputName=sbom
+          cp target/sbom.json sbom.cdx.json
+
+      - name: Generate OpenVEX with shell scripts
+        shell: bash
+        run: |
+          chmod +x vex-automation/scripts/*.sh
+          ./vex-automation/scripts/invoke-vex-pipeline.sh \
+            --sbom ./sbom.cdx.json \
+            --decisions ./vex-automation/decisions.example.json
+
+      - name: Upload VEX artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vex-shell-artifacts
+          path: |
+            vex-automation/out/*.json

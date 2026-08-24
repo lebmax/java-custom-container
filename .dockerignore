@@ -1,0 +1,11 @@
+.git
+.gradle
+.idea
+.mvn
+.PVS-Studio
+.veai
+build
+target
+out
+*.iml
+*.log

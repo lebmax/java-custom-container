@@ -1,0 +1,72 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-h2-schema
+      author: spring-petclinic
+      dbms: h2
+      changes:
+        - sqlFile:
+            path: ../h2/schema.sql
+            relativeToChangelogFile: true
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: true
+
+  - changeSet:
+      id: 002-h2-data
+      author: spring-petclinic
+      dbms: h2
+      changes:
+        - sqlFile:
+            path: ../h2/data.sql
+            relativeToChangelogFile: true
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: true
+
+  - changeSet:
+      id: 001-mysql-schema
+      author: spring-petclinic
+      dbms: mysql
+      changes:
+        - sqlFile:
+            path: ../mysql/schema.sql
+            relativeToChangelogFile: true
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: true
+
+  - changeSet:
+      id: 002-mysql-data
+      author: spring-petclinic
+      dbms: mysql
+      changes:
+        - sqlFile:
+            path: ../mysql/data.sql
+            relativeToChangelogFile: true
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: true
+
+  - changeSet:
+      id: 001-postgresql-schema
+      author: spring-petclinic
+      dbms: postgresql
+      changes:
+        - sqlFile:
+            path: ../postgres/schema.sql
+            relativeToChangelogFile: true
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: true
+
+  - changeSet:
+      id: 002-postgresql-data
+      author: spring-petclinic
+      dbms: postgresql
+      changes:
+        - sqlFile:
+            path: ../postgres/data.sql
+            relativeToChangelogFile: true
+            encoding: UTF-8
+            splitStatements: true
+            stripComments: true

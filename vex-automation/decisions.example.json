@@ -1,0 +1,17 @@
+{
+  "author": "spring-petclinic security team",
+  "role": "Product Security",
+  "defaults": {
+    "status": "under_investigation",
+    "status_notes": "New scanner finding. Triage is required before changing this VEX status."
+  },
+  "statements": [
+    {
+      "vulnerability": "CVE-2026-9828",
+      "purl": "pkg:maven/ch.qos.logback/logback-core@1.5.32?type=jar",
+      "status": "affected",
+      "action_statement": "Upgrade logback-core to 1.5.33 or a later fixed version.",
+      "status_notes": "Example decision for a vulnerable Maven dependency found in the current SBOM."
+    }
+  ]
+}

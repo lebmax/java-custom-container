@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Перенесите этот файл, или укажите в аргументах Maven
+    Move this file, or specify as Maven parameter
+    %MAVEN_HOME%\conf\settings.xml (Windows)
+    $HOME/.m2/settings.xml (Mac OS X / Linux)
+    ./mvnw -s settings.xml package spring-boot:run
+-->
+<settings>
+	<servers>
+	    <!--
+	        Можно скопировать отдельно это определение сервера в свой settings.xml
+	        You may copy this server definition to your own settings.xml
+	    -->
+		<server>
+		    <id>axiom-spring</id>
+		    <username>DEMO_PROJECT_1</username>
+
+		    <!-- Впишите токен центра загрузок / Fill in API token below: -->
+		    <password>NDE3MzQ2RTg1OUYzMjY0QzkwMEE2MzM5M0MwREU3QzZDOTg1RDExRjE5NzBBMkMzM0ZERjAwNjQ2MzE3QzYwQQ</password>
+		</server>
+		<server>
+		    <id>trusted-repo</id>
+		    <username>DEMO_PROJECT_1</username>
+
+		    <!-- Впишите токен центра загрузок / Fill in API token below: -->
+		    <password>NDE3MzQ2RTg1OUYzMjY0QzkwMEE2MzM5M0MwREU3QzZDOTg1RDExRjE5NzBBMkMzM0ZERjAwNjQ2MzE3QzYwQQ</password>
+		</server>
+	</servers>
+
+	<!--
+	    Профиль, применяемый по умолчанию и подключающий к проекту репозитории Axiom Spring
+	    Profile that is active by default providing Axiom Spring artifact repositories
+	-->
+	<profiles>
+	    <profile>
+	        <id>axiom-spring</id>
+	        <activation>
+	            <activeByDefault>true</activeByDefault>
+	        </activation>
+	        <repositories>
+		        <repository>
+		            <id>axiom-spring</id>
+		            <name>Axiom Spring</name>
+		            <url>https://spring-repo.axiomjdk.ru</url>
+		            <snapshots>
+		                <enabled>false</enabled>
+		            </snapshots>
+		        </repository>
+		        <repository>
+		            <id>trusted-repo</id>
+		            <name>Trusted Repo</name>
+		            <url>https://repo.axiomjdk.ru</url>
+		            <snapshots>
+		                <enabled>false</enabled>
+		            </snapshots>
+		        </repository>
+	        </repositories>
+	        <pluginRepositories>
+		        <pluginRepository>
+		            <id>trusted-repo</id>
+		            <name>Trusted Repo</name>
+		            <url>https://repo.axiomjdk.ru</url>
+		            <snapshots>
+		                <enabled>false</enabled>
+		            </snapshots>
+		        </pluginRepository>
+		        <pluginRepository>
+		            <id>axiom-spring</id>
+		            <name>Axiom Spring</name>
+		            <url>https://spring-repo.axiomjdk.ru</url>
+		            <snapshots>
+		                <enabled>false</enabled>
+		            </snapshots>
+		        </pluginRepository>
+	        </pluginRepositories>
+	    </profile>
+	</profiles>
+</settings>
