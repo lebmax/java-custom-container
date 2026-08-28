@@ -20,7 +20,7 @@ RUN jdeps --ignore-missing-deps -q  \
     target/deps/BOOT-INF/classes > deps.info
 
 RUN jlink \
-    --add-modules "$(cat deps.info)",java.logging,java.management,java.naming,java.sql,jdk.crypto.ec,jdk.security.jgss \
+    --add-modules "$(cat deps.info)" \
     --strip-debug \
     --compress zip-9 \
     --no-header-files \
