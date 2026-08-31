@@ -27,7 +27,7 @@ RUN jlink \
     --no-man-pages \
     --output /myjre
 
-FROM cr.yandex/crpgua9ba7h8red2hulb/25-trusted-axiom-runtime-container-pro:jre-25-glibc
+FROM cr.int.axiomjdk.ru/axiom-linux-25/axiom-linux-base:25-glibc
 
 ENV JAVA_HOME /user/java/jdk25
 ENV PATH $JAVA_HOME/bin:$PATH

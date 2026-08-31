@@ -1,0 +1,53 @@
+FROM maven:3.9.16-eclipse-temurin-25 AS build
+
+WORKDIR /usr/src/project
+
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+COPY src src
+RUN mvn package -DskipTests
+
+RUN mkdir -p target/deps && \
+    cd target/deps && \
+    jar -xf ../app.jar
+
+RUN jdeps \
+    --ignore-missing-deps \
+    -q \
+    --recursive \
+    --multi-release 25 \
+    --print-module-deps \
+    --class-path 'target/deps/BOOT-INF/lib/*' \
+    target/deps/BOOT-INF/classes > deps.info || \
+    { status="$?"; cat deps.info; exit "$status"; }
+
+RUN jlink \
+    --add-modules "$(cat deps.info)" \
+    --strip-debug \
+    --compress zip-9 \
+    --no-header-files \
+    --no-man-pages \
+    --output /myjre
+
+RUN mkdir -p /module-report && \
+    java --list-modules | cut -d@ -f1 | sort > /module-report/jdk-modules.txt && \
+    /myjre/bin/java --list-modules | cut -d@ -f1 | sort > /module-report/jlink-modules.txt && \
+    jdk_modules="$(wc -l < /module-report/jdk-modules.txt | tr -d ' ')" && \
+    jlink_modules="$(wc -l < /module-report/jlink-modules.txt | tr -d ' ')" && \
+    removed_modules="$((jdk_modules - jlink_modules))" && \
+    printf 'JDK modules before jlink: %s\nModules after jlink: %s\nRemoved modules: %s\n' \
+      "$jdk_modules" "$jlink_modules" "$removed_modules" | tee /module-report/summary.txt
+
+FROM cr.int.axiomjdk.ru/axiom-linux-25/axiom-linux-base:25-glibc
+
+ENV JAVA_HOME=/user/java/jdk25
+ENV PATH="$JAVA_HOME/bin:$PATH"
+
+COPY --from=build /myjre $JAVA_HOME
+COPY --from=build /module-report /module-report
+COPY --from=build /usr/src/project/target/app.jar /app/app.jar
+
+WORKDIR /app
+
+CMD ["sh", "-c", "cat /module-report/summary.txt && printf '\nJDK module list before jlink:\n' && cat /module-report/jdk-modules.txt && printf '\nModule list after jlink:\n' && cat /module-report/jlink-modules.txt"]
