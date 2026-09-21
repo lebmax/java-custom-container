@@ -21,14 +21,14 @@ COPY src src
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -B -f docker-image-builds/maven-build-image/pom.xml -DskipTests package
 
-FROM eclipse-temurin:25-jre-noble AS extract
+FROM bellsoft/liberica-openjdk-25:jre-noble AS extract
 
 WORKDIR /builder
 
 COPY --from=build /workspace/docker-image-builds/maven-build-image/target/app.jar application.jar
 RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
-FROM eclipse-temurin:25-jre-noble AS runtime
+FROM bellsoft/liberica-openjdk-25:jre-noble AS runtime
 
 WORKDIR /application
 

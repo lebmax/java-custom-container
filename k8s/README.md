@@ -9,25 +9,25 @@ This directory contains two PetClinic deployment variants:
 
 Build the optimized image:
 
-```powershell
+```bash
 docker build -f docker-image-builds\Dockerfile -t spring-petclinic:optimized-dockerfile .
 ```
 
 If the cluster runs in `kind`, load the image into the cluster:
 
-```powershell
+```bash
 kind load docker-image spring-petclinic:optimized-dockerfile
 ```
 
 If the cluster runs in `minikube`, load the image into the cluster:
 
-```powershell
+```bash
 minikube image load spring-petclinic:optimized-dockerfile
 ```
 
 Apply the database and application manifests:
 
-```powershell
+```bash
 kubectl apply -f k8s\db.yml
 kubectl apply -f k8s\petclinic-optimized.yml
 kubectl rollout status deployment/petclinic-optimized
@@ -46,6 +46,6 @@ Open `http://localhost:8080`.
 
 For production, replace the local tag with an immutable registry reference:
 
-```powershell
+```bash
 kubectl set image deployment/petclinic-optimized petclinic=registry.example.ru/petclinic@sha256:<digest>
 ```

@@ -13,8 +13,8 @@ The projects compile PetClinic with Java 21 bytecode and ask buildpacks to put J
 
 ## Maven
 
-```powershell
-.\mvnw.cmd -f docker-image-builds\maven-build-image\pom.xml -DskipTests spring-boot:build-image
+```bash
+./mvnw -f docker-image-builds\maven-build-image\pom.xml -DskipTests spring-boot:build-image
 ```
 
 Image name:
@@ -25,8 +25,8 @@ spring-petclinic:buildpack-maven
 
 ## Gradle
 
-```powershell
-.\gradlew.bat -p docker-image-builds\gradle-boot-build-image bootBuildImage -x test
+```bash
+./gradlew -p docker-image-builds\gradle-boot-build-image bootBuildImage -x test
 ```
 
 Image name:
@@ -49,7 +49,7 @@ between CI runs.
 
 ## Optimized Dockerfile
 
-```powershell
+```bash
 docker build -f docker-image-builds\Dockerfile -t spring-petclinic:optimized-dockerfile .
 ```
 
@@ -63,7 +63,7 @@ This Dockerfile follows Spring Boot's layered jar recommendations and adds a Jav
 
 There is also a Gradle variant with the same layer extraction strategy:
 
-```powershell
+```bash
 docker build -f docker-image-builds\Dockerfile.gradle-cache -t spring-petclinic:optimized-gradle .
 ```
 
@@ -74,13 +74,6 @@ Maven or Gradle dependency caches.
 
 For CI, use a registry cache so different runners can reuse the same build
 layers:
-
-```powershell
-.\docker-image-builds\scripts\Invoke-BuildKitImageBuild.ps1 `
-  -ImageName registry.example.ru/petclinic:2026.09.15 `
-  -CacheRef registry.example.ru/petclinic:buildcache `
-  -Push
-```
 
 ```bash
 ./docker-image-builds/scripts/invoke-buildkit-image-build.sh \
