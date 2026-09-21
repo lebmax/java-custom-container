@@ -1,0 +1,125 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: petclinic-runtime-config
+data:
+  SPRING_PROFILES_ACTIVE: postgres
+  SERVICE_BINDING_ROOT: /bindings
+  JAVA_TOOL_OPTIONS: >-
+    -XX:InitialRAMPercentage=50
+    -XX:MaxRAMPercentage=75
+  SPRING_APPLICATION_JSON: |
+    {
+      "management.endpoint.health.probes.add-additional-paths": true,
+      "management.endpoints.web.exposure.include": "health,info,metrics,prometheus",
+      "server.shutdown": "graceful",
+      "spring.lifecycle.timeout-per-shutdown-phase": "30s"
+    }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: petclinic-optimized
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  selector:
+    app: petclinic-optimized
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: petclinic-optimized
+  labels:
+    app: petclinic-optimized
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: petclinic-optimized
+  template:
+    metadata:
+      labels:
+        app: petclinic-optimized
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: petclinic
+          image: spring-petclinic:optimized-dockerfile
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: petclinic-runtime-config
+          ports:
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 5
+            failureThreshold: 2
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - sleep 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /bindings/secret
+              name: binding
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: binding
+          projected:
+            sources:
+              - secret:
+                  name: demo-db

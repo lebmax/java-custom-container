@@ -129,6 +129,18 @@
               <BP_JVM_VERSION>${buildpack.jvm.version}</BP_JVM_VERSION>
             </env>
           </image>
+          <docker>
+            <buildCache>
+              <volume>
+                <name>petclinic-maven-build-cache</name>
+              </volume>
+            </buildCache>
+            <launchCache>
+              <volume>
+                <name>petclinic-maven-launch-cache</name>
+              </volume>
+            </launchCache>
+          </docker>
         </configuration>
       </plugin>
     </plugins>

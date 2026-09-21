@@ -35,6 +35,18 @@ Image name:
 spring-petclinic:buildpack-gradle
 ```
 
+The Maven and Gradle buildpack examples use explicit cache volume names:
+
+```text
+petclinic-maven-build-cache
+petclinic-maven-launch-cache
+petclinic-gradle-build-cache
+petclinic-gradle-launch-cache
+```
+
+This keeps the Cloud Native Buildpacks cache stable even when image tags change
+between CI runs.
+
 ## Optimized Dockerfile
 
 ```powershell
@@ -48,6 +60,37 @@ spring-petclinic:optimized-dockerfile
 ```
 
 This Dockerfile follows Spring Boot's layered jar recommendations and adds a Java 25 AOT cache training run. It uses the Maven wrapper project from `docker-image-builds/maven-build-image` so the image is comparable with the Maven and Gradle buildpack variants.
+
+There is also a Gradle variant with the same layer extraction strategy:
+
+```powershell
+docker build -f docker-image-builds\Dockerfile.gradle-cache -t spring-petclinic:optimized-gradle .
+```
+
+## BuildKit registry cache
+
+For local Docker builds, the optimized Dockerfiles use BuildKit cache mounts for
+Maven or Gradle dependency caches.
+
+For CI, use a registry cache so different runners can reuse the same build
+layers:
+
+```powershell
+.\docker-image-builds\scripts\Invoke-BuildKitImageBuild.ps1 `
+  -ImageName registry.example.ru/petclinic:2026.09.15 `
+  -CacheRef registry.example.ru/petclinic:buildcache `
+  -Push
+```
+
+```bash
+./docker-image-builds/scripts/invoke-buildkit-image-build.sh \
+  --image registry.example.ru/petclinic:2026.09.15 \
+  --cache-ref registry.example.ru/petclinic:buildcache \
+  --push
+```
+
+The same pattern is shown as a GitHub Actions example in
+`docker-image-builds/ci/github-actions-buildkit-cache.yml`.
 
 ## Comparison target
 

@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1.7
+
+# Gradle variant of the optimized Spring Boot image build.
+# It mirrors Dockerfile but uses the Gradle wrapper and a BuildKit cache mount
+# for /root/.gradle.
+
+FROM eclipse-temurin:25-jdk-noble AS build
+
+WORKDIR /workspace
+
+COPY gradlew gradlew
+COPY gradle gradle
+COPY docker-image-builds/gradle-boot-build-image/settings.gradle docker-image-builds/gradle-boot-build-image/settings.gradle
+COPY docker-image-builds/gradle-boot-build-image/build.gradle docker-image-builds/gradle-boot-build-image/build.gradle
+
+RUN chmod +x gradlew
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew -p docker-image-builds/gradle-boot-build-image --no-daemon dependencies
+
+COPY src src
+RUN --mount=type=cache,target=/root/.gradle \
+    ./gradlew -p docker-image-builds/gradle-boot-build-image --no-daemon bootJar -x test
+
+FROM eclipse-temurin:25-jre-noble AS extract
+
+WORKDIR /builder
+
+COPY --from=build /workspace/docker-image-builds/gradle-boot-build-image/build/libs/app.jar application.jar
+RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
+
+FROM eclipse-temurin:25-jre-noble AS runtime
+
+WORKDIR /application
+
+RUN groupadd --system --gid 1001 app \
+    && useradd --system --uid 1001 --gid app --home-dir /application --shell /usr/sbin/nologin app \
+    && chown app:app /application
+
+COPY --from=extract --chown=app:app /builder/extracted/dependencies/ ./
+COPY --from=extract --chown=app:app /builder/extracted/spring-boot-loader/ ./
+COPY --from=extract --chown=app:app /builder/extracted/snapshot-dependencies/ ./
+COPY --from=extract --chown=app:app /builder/extracted/application/ ./
+
+USER app
+
+RUN java -XX:AOTCacheOutput=app.aot -Dspring.context.exit=onRefresh -jar application.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-XX:AOTCache=app.aot", "-jar", "application.jar"]
