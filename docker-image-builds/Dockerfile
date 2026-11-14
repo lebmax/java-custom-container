@@ -45,8 +45,8 @@ COPY --from=extract --chown=app:app /builder/extracted/application/ ./
 
 USER app
 
-# Java 25 optimization: create an AOT cache in the image and enable it at launch.
-RUN java -XX:AOTCacheOutput=app.aot -Dspring.context.exit=onRefresh -jar application.jar
+# Build the cache with the same heap scale as the target Kubernetes pod.
+RUN java -Xmx256m -XX:AOTCacheOutput=app.aot -Dspring.context.exit=onRefresh -jar application.jar
 
 EXPOSE 8080
 

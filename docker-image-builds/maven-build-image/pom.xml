@@ -125,11 +125,13 @@
             <name>${image.name}</name>
             <builder>${builder.image}</builder>
             <pullPolicy>IF_NOT_PRESENT</pullPolicy>
+            <buildpacks>
+              <buildpack>docker.io/paketobuildpacks/adoptium:latest</buildpack>
+              <buildpack>docker.io/paketobuildpacks/java:latest</buildpack>
+            </buildpacks>
             <env>
               <BP_JVM_VERSION>${buildpack.jvm.version}</BP_JVM_VERSION>
             </env>
-          </image>
-          <docker>
             <buildCache>
               <volume>
                 <name>petclinic-maven-build-cache</name>
@@ -140,9 +142,64 @@
                 <name>petclinic-maven-launch-cache</name>
               </volume>
             </launchCache>
-          </docker>
+          </image>
         </configuration>
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>native-container</id>
+      <properties>
+        <image.name>spring-petclinic:native-graalvm</image.name>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>add-reachability-metadata</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>add-reachability-metadata</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <configuration combine.self="override">
+              <image>
+                <name>${image.name}</name>
+                <builder>${builder.image}</builder>
+                <pullPolicy>IF_NOT_PRESENT</pullPolicy>
+                <env>
+                  <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
+                  <BP_JVM_VERSION>${buildpack.jvm.version}</BP_JVM_VERSION>
+                </env>
+                <buildpacks>
+                  <buildpack>docker.io/paketobuildpacks/graalvm:latest</buildpack>
+                  <buildpack>docker.io/paketobuildpacks/java-native-image:latest</buildpack>
+                </buildpacks>
+                <buildCache>
+                  <volume>
+                    <name>petclinic-maven-native-build-cache</name>
+                  </volume>
+                </buildCache>
+                <launchCache>
+                  <volume>
+                    <name>petclinic-maven-native-launch-cache</name>
+                  </volume>
+                </launchCache>
+              </image>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

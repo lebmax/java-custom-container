@@ -1,0 +1,163 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: petclinic-jvm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: petclinic-jvm
+  template:
+    metadata:
+      labels:
+        app: petclinic-jvm
+    spec:
+      containers:
+        - name: petclinic
+          image: spring-petclinic:buildpack-maven
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: BPL_JVM_THREAD_COUNT
+              value: "50"
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:ReservedCodeCacheSize=64m"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 300Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 128Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: petclinic-native
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: petclinic-native
+  template:
+    metadata:
+      labels:
+        app: petclinic-native
+    spec:
+      containers:
+        - name: petclinic
+          image: spring-petclinic:native-graalvm
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 1
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 128Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: petclinic-aot-cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: petclinic-aot-cache
+  template:
+    metadata:
+      labels:
+        app: petclinic-aot-cache
+    spec:
+      containers:
+        - name: petclinic
+          image: spring-petclinic:optimized-dockerfile
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xmx512m"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 300Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 15
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 128Mi

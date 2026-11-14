@@ -23,6 +23,31 @@ Image name:
 spring-petclinic:buildpack-maven
 ```
 
+The Maven and Gradle examples explicitly select Eclipse Temurin JRE through
+`paketobuildpacks/adoptium`, followed by `paketobuildpacks/java`. Buildpack order
+matters: Adoptium provides the JVM before the Java composite buildpack checks
+its default JVM provider. `BP_JVM_VERSION=25` selects the Java version, not the
+vendor. The GraalVM Native Image profile has a separate buildpack list.
+
+Verify the JVM in the built image:
+
+```bash
+docker run --rm --entrypoint /layers/paketo-buildpacks_adoptium/jre/bin/java \
+  spring-petclinic:buildpack-maven -version
+```
+
+Build the GraalVM Native Image variant with the Maven project:
+
+```bash
+./mvnw -f docker-image-builds/maven-build-image/pom.xml -Pnative,native-container -DskipTests spring-boot:build-image
+```
+
+Image name:
+
+```text
+spring-petclinic:native-graalvm
+```
+
 ## Gradle
 
 ```bash
@@ -85,8 +110,57 @@ layers:
 The same pattern is shown as a GitHub Actions example in
 `docker-image-builds/ci/github-actions-buildkit-cache.yml`.
 
+## Kubernetes runtime profiles
+
+The example manifest compares three deployment profiles:
+
+```bash
+kubectl apply -f docker-image-builds/kubernetes/runtime-comparison.yaml
+```
+
+- `petclinic-jvm`: the Maven buildpack image with Eclipse Temurin JRE. At a
+  `512Mi` memory limit, the example reduces the buildpack thread-count estimate
+  and code cache so the JVM leaves room outside the Java heap.
+- `petclinic-native`: the GraalVM Native Image variant under the same `512Mi`
+  limit. Lower limits should be selected only after a load test.
+- `petclinic-aot-cache`: the custom layered Dockerfile with a Java AOT cache.
+  The tested profile uses a `768Mi` container limit and `-Xmx512m`; the cache
+  did not load at a `512Mi` container limit for this application.
+
+The manifest is a benchmark and tuning starting point, not a universal set of
+production requests and limits.
+Rebuilding a local image tag does not replace a copy already cached on a
+Kubernetes node. Use a new tag for each published build and update the
+Deployment, or explicitly reload the image into the local cluster before
+restarting Pods. This matters when replacing an existing JVM image with Temurin.
+
+## Recorded measurements
+
+Raw runs, image IDs, startup logs, exact layer sizes and test parameters are in
+`measurements/*-2026-10-29.json`. Each image is started three times with one CPU
+and a preloaded image. Readiness is the first successful HTTP response from
+`/actuator/health`, not the Kubernetes Pod `Ready` transition. Memory is sampled
+with `docker stats` five seconds later; there is no application load.
+
+The Temurin buildpack image uses a `512Mi` limit, `BPL_JVM_THREAD_COUNT=50` and
+`JAVA_TOOL_OPTIONS=-XX:ReservedCodeCacheSize=64m`. Paketo's memory calculator
+sets `-Xmx`; that explicit value takes precedence over `MaxRAMPercentage`.
+The thread-count setting is an estimate for memory calculation, not a cap on
+the number of Java threads.
+
+Use `docker images -a --tree` for the `CONTENT SIZE` column. The plain `SIZE`
+field and uncompressed `docker history` layer sizes are different metrics.
+The measured images have different bases and Java versions, so these results
+compare complete builds rather than isolate the effect of the JVM vendor.
+One preliminary `jlink-axiom` run did not reach HTTP readiness within 180 s;
+the cause is unknown. The chart uses a separate successful repeat series.
+See `measurements/jlink-preliminary-timeout-2026-10-29.json`; the successful
+medians must not be interpreted as proof of startup reliability.
+
 ## Comparison target
 
 - Plugin builds: Cloud Native Buildpacks, no Dockerfile, less manual control.
 - Optimized Dockerfile build: explicit multi-stage Dockerfile, Spring Boot layers, non-root runtime, AOT cache.
+- Native Image build: fast startup and lower idle memory, but a slower and more
+  memory-intensive build plus reachability metadata requirements.
 - Custom `jlink` builds: explicit Dockerfile, custom base image, `jdeps` + `jlink`, more manual verification.

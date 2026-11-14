@@ -66,6 +66,10 @@ tasks.named('bootBuildImage') {
   imageName = 'spring-petclinic:buildpack-gradle'
   builder = 'paketobuildpacks/builder-noble-java-tiny:latest'
   pullPolicy = 'IF_NOT_PRESENT'
+  buildpacks = [
+    'docker.io/paketobuildpacks/adoptium:latest',
+    'docker.io/paketobuildpacks/java:latest'
+  ]
   environment = [
     'BP_JVM_VERSION': '25'
   ]

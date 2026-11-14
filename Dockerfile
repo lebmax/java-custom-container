@@ -29,15 +29,16 @@ RUN jlink \
 
 FROM cr.int.axiomjdk.ru/axiom-linux-25/axiom-linux-base:25-glibc
 
-ENV JAVA_HOME /user/java/jdk25
-ENV PATH $JAVA_HOME/bin:$PATH
+ENV JAVA_HOME=/user/java/jdk25
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 COPY --from=build /myjre $JAVA_HOME
 
 RUN mkdir /app
 
-COPY --from=build /usr/src/project/target/app.jar /app/
+COPY --from=build --chown=10001:10001 /usr/src/project/target/app.jar /app/
 WORKDIR /app
+USER 10001:10001
 
 EXPOSE 8080
 
