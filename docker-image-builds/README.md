@@ -48,6 +48,24 @@ Image name:
 spring-petclinic:native-graalvm
 ```
 
+### Native Image with diagnostics
+
+From the repository root, build the separate diagnostic variant:
+
+```bash
+docker buildx build --load -f docker-image-builds/Dockerfile.native \
+  --build-arg NATIVE_PROFILES=native,native-container,native-diagnostics \
+  -t spring-petclinic:native-diag-2505 .
+```
+
+The Maven `native-diagnostics` profile passes
+`--enable-monitoring=jcmd,jfr,heapdump` to Oracle GraalVM Native Image.
+Omit the build argument for the same Dockerfile without that profile.
+The runtime image contains the executable, not a JDK. To use `jcmd`,
+provide the diagnostic tool separately, run it as the same user as the native
+process, and pass the PID as seen from the application container. Mount a
+writable disk-backed volume for recordings and dumps.
+
 ## Gradle
 
 ```bash

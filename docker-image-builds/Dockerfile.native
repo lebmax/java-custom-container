@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1.7
+FROM maven:3.9.16-eclipse-temurin-25 AS maven
+FROM container-registry.oracle.com/graalvm/native-image:25.0.5 AS build
+COPY --from=maven /usr/share/maven /usr/share/maven
+WORKDIR /workspace
+COPY docker-image-builds/maven-build-image/pom.xml docker-image-builds/maven-build-image/pom.xml
+COPY src src
+ARG NATIVE_PROFILES=native,native-container
+RUN --mount=type=cache,target=/root/.m2 \
+    /usr/share/maven/bin/mvn -B -ntp -f docker-image-builds/maven-build-image/pom.xml \
+      -P"${NATIVE_PROFILES}" -DskipTests -DimageName=petclinic-native package native:compile-no-fork
+
+FROM paketobuildpacks/ubuntu-noble-run-tiny:0.0.159 AS runtime
+WORKDIR /workspace
+COPY --from=build --chown=10001:10001 /workspace/docker-image-builds/maven-build-image/target/petclinic-native /workspace/petclinic-native
+USER 10001:10001
+ENTRYPOINT ["/workspace/petclinic-native"]

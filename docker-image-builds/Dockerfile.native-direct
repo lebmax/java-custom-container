@@ -1,0 +1,69 @@
+# syntax=docker/dockerfile:1.7
+FROM maven:3.9.16-eclipse-temurin-25 AS aot
+WORKDIR /workspace
+COPY pom.xml .
+COPY src ./src
+
+ARG SPRING_BOOT_VERSION=4.0.8
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -ntp -DskipTests \
+      -DincludeScope=runtime \
+      -DexcludeArtifactIds=spring-boot-devtools \
+      -DoutputDirectory=target/runtime-dependencies \
+      compile \
+      org.graalvm.buildtools:native-maven-plugin:0.11.5:add-reachability-metadata \
+      org.springframework.boot:spring-boot-maven-plugin:$SPRING_BOOT_VERSION:process-aot \
+      org.apache.maven.plugins:maven-dependency-plugin:3.9.0:copy-dependencies \
+    && test -z "$(find target/runtime-dependencies -name 'spring-boot-devtools-*.jar' -print -quit)"
+
+FROM container-registry.oracle.com/graalvm/native-image:25.0.5 AS native
+WORKDIR /workspace
+COPY --from=aot /workspace/target/classes/ ./classes/
+COPY --from=aot /workspace/target/runtime-dependencies/ ./lib/
+
+RUN <<'BUILD'
+set -eu
+metadata=classes/META-INF/native-image/petclinic/thymeleaf-jackson3
+mkdir -p "$metadata"
+cat > "$metadata/reachability-metadata.json" <<'JSON'
+{
+  "reflection": [
+    { "type": "tools.jackson.core.json.JsonWriteFeature" },
+    { "type": "tools.jackson.databind.ObjectMapper", "methods": [
+      { "name": "writeValue", "parameterTypes": ["java.io.Writer", "java.lang.Object"] }
+    ] },
+    { "type": "tools.jackson.databind.SerializationFeature" },
+    { "type": "tools.jackson.databind.cfg.MapperBuilder", "methods": [
+      { "name": "defaultDateFormat", "parameterTypes": ["java.text.DateFormat"] },
+      { "name": "findAndAddModules", "parameterTypes": [] }
+    ] },
+    { "type": "tools.jackson.databind.deser.Deserializers[]" },
+    { "type": "tools.jackson.databind.deser.KeyDeserializers[]" },
+    { "type": "tools.jackson.databind.deser.ValueInstantiators[]" },
+    { "type": "tools.jackson.databind.json.JsonMapper", "methods": [
+      { "name": "builder", "parameterTypes": [] }
+    ] },
+    { "type": "tools.jackson.databind.json.JsonMapper$Builder", "methods": [
+      { "name": "build", "parameterTypes": [] }
+    ] },
+    { "type": "tools.jackson.databind.ser.Serializers[]" }
+  ]
+}
+JSON
+classpath=classes
+for dependency in lib/*.jar; do
+  classpath="$classpath:$dependency"
+done
+native-image --no-fallback \
+  --enable-monitoring=jcmd,jfr,heapdump \
+  -cp "$classpath" \
+  -o /workspace/petclinic-native \
+  org.springframework.samples.petclinic.PetClinicApplication
+BUILD
+
+FROM paketobuildpacks/ubuntu-noble-run-tiny:0.0.159
+WORKDIR /workspace
+COPY --from=native --chown=10001:10001 \
+    /workspace/petclinic-native /workspace/petclinic-native
+USER 10001:10001
+ENTRYPOINT ["/workspace/petclinic-native"]

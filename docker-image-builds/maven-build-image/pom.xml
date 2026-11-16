@@ -150,6 +150,22 @@
 
   <profiles>
     <profile>
+      <id>native-diagnostics</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <configuration>
+              <buildArgs combine.children="append">
+                <buildArg>--enable-monitoring=jcmd,jfr,heapdump</buildArg>
+              </buildArgs>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>native-container</id>
       <properties>
         <image.name>spring-petclinic:native-graalvm</image.name>
